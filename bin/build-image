@@ -1,0 +1,210 @@
+#!/bin/bash
+# build-image <tag(optional)>
+
+info() {
+  echo "[`date +'%Y-%m-%d %T'`] $@"
+}
+
+die() {
+  echo "[`date +'%Y-%m-%d %T'`] $@" >&2
+  exit 1
+}
+
+while [[ $# -gt 1 ]]; do
+  key="$1"
+
+  case $key in
+    -w|--webhook)
+      WEBHOOK="$2"
+      shift # past argument
+      ;;
+    -c|--channel)
+      CHANNEL="$2"
+      shift # past argument
+      ;;
+    -r|--region)
+      REGION="$2"
+      shift # past argument
+      ;;
+    -n|--repo-name)
+      REPO_NAME="$2"
+      shift # past argument
+      ;;
+    -e|--ecr-url)
+      ECR_URL="$2"
+      shift # past argument
+      ;;
+    -t|--tag)
+      TAG="$2"
+      shift # past argument
+      ;;
+    *)
+      echo "Unknown Option."
+      exit 1
+      ;;
+  esac
+  shift # past argument or value
+done
+
+eval ecr_url=\$ECR_URL
+if [ "$ecr_url" ]; then
+  info "ECR URL: $ecr_url"
+else
+  die "-e|--ecr-url Required"
+fi
+
+eval base=\$REPO_NAME
+if [ "$base" ]; then
+  info "ECR Repo: $base"
+else
+  die "-n|--repo-name Required"
+fi
+
+channel="builds"
+eval channel_set=\$CHANNEL
+if [ "$channel_set" ]; then
+  channel="$channel_set"
+fi
+info "Slack Channel: $channel"
+
+region='us-west-2'
+eval region_set=\$AWS_REGION
+if [ "$region_set" ]; then
+  region="$region_set"
+fi
+info "ECR Region: $region"
+
+eval input_tag=\$TAG
+eval webhook=\$WEBHOOK
+
+if [[ -z "$input_tag" ]] ; then
+  branch_name="$(git symbolic-ref --short -q HEAD)"
+  clean_branch="$(echo $branch_name | sed -e 's/\//-/g')"
+  short_sha="$(git rev-parse --short HEAD)"
+  tag="${clean_branch}-${short_sha}"
+  branch_image="${ecr_url}/${base}:${clean_branch}"
+  full_image="${ecr_url}/${base}:${tag}"
+else
+  tag="${input_tag}"
+  branch_name="- tag build -"
+  short_sha="- tag build -"
+  clean_branch="- tag build -"
+  branch_image="${ecr_url}/${base}:${tag}"
+  full_image="${ecr_url}/${base}:${tag}"
+  shift
+fi
+
+info "Git Branch:     ${branch_name}"
+info "Git SHA1:       ${short_sha}"
+info "Branch Image:   ${branch_image}"
+info "Full Image:     ${full_image}"
+info "Slack Webhook:  ${webhook}"
+
+slack_success() {
+  eval webhook=\$WEBHOOK
+  if [ "$webhook" ]; then
+    true
+  else
+    return 0
+  fi
+  branch=$1
+  commit=$2
+  build=$3
+  images=$4
+  json="{\"username\": \"AWS CodeBuild\", \"icon_emoji\": \":vaultboy:\", \"channel\": \"$channel\", \"attachments\": [ { \"color\": \"#36a64f\", \"text\": \"Build Complete for $branch ($commit)\",\"fields\": [{\"title\": \"Branch\",\"value\": \"$branch\",\"short\": true},{\"title\": \"Commit\",\"value\": \"$commit\",\"short\": true},{\"title\": \"Status\",\"value\": \"Complete\",\"short\": true},{\"title\": \"CodeBuild ID\",\"value\": \"$build\",\"short\": false},{\"title\": \"Images\",\"value\": \"$images\",\"short\": false}]}]}}"
+
+  curl -s -o /dev/null -d "payload=$json" "$webhook"
+}
+
+slack_start() {
+  eval webhook=\$WEBHOOK
+  if [ "$webhook" ]; then
+    true
+  else
+    return 0
+  fi
+  branch=$1
+  commit=$2
+  build=$3
+  json="{\"username\": \"AWS CodeBuild\", \"icon_emoji\": \":vaultboy:\", \"channel\": \"$channel\", \"attachments\": [ { \"text\": \"Build starting for $branch ($commit)\",\"fields\": [{\"title\": \"Branch\",\"value\": \"$branch\",\"short\": true},{\"title\": \"Commit\",\"value\": \"$commit\",\"short\": true},{\"title\": \"Status\",\"value\": \"Starting\",\"short\": true},{\"title\": \"CodeBuild ID\",\"value\": \"$build\",\"short\": false}]}]}}"
+
+  curl -s -o /dev/null -d "payload=$json" "$webhook"
+}
+
+slack_fail() {
+  eval webhook=\$WEBHOOK
+  if [ "$webhook" ]; then
+    true
+  else
+    return 0
+  fi
+  branch=$1
+  commit=$2
+  build=$3
+  msg=$4
+  json="{\"username\": \"AWS CodeBuild\", \"icon_emoji\": \":vaultboy:\", \"channel\": \"$channel\", \"attachments\": [ { \"color\": \"#FF0000\", \"text\": \"Build failure for $branch ($commit)\",\"fields\": [{\"title\": \"Branch\",\"value\": \"$branch\",\"short\": true},{\"title\": \"Commit\",\"value\": \"$commit\",\"short\": true},{\"title\": \"Status\",\"value\": \"Failure\",\"short\": true},{\"title\": \"CodeBuild ID\",\"value\": \"$build\",\"short\": false},{\"title\": \"Script Error\",\"value\": \"$msg\",\"short\": false}]}]}}"
+
+  curl -s -o /dev/null -d "payload=$json" "$webhook"
+}
+
+buildid="adhoc-$(whoami)-$(hostname)"
+eval is_codebuild=\$CODEBUILD_BUILD_ID
+if [ "$is_codebuild" ]; then
+  buildid="$is_codebuild"
+fi
+info "Build ID: $buildid"
+
+slack_start $branch_name $short_sha $buildid
+
+# check for Dockerfile
+if [ ! -f ./Dockerfile ]; then
+  msg="Dockerfile not found!"
+  slack_fail $branch_name $short_sha $buildid "${msg}"
+  die "${msg}"
+fi
+
+# Log in to ECR
+info "Logging in to ECR"
+eval $(aws --region $region ecr get-login)
+
+if [ "$?" != "0" ]; then
+  msg="AWS ECR Login Failure ($?)"
+  slack_fail $branch_name $short_sha $buildid "${msg}"
+  die "${msg}"
+fi
+
+info "Pulling Branch Image"
+docker pull $branch_image || true
+
+info "Build Docker Image"
+docker build -t $full_image .
+
+if [ "$?" != "0" ]; then
+  msg="Docker Build Failure ($?)"
+  slack_fail $branch_name $short_sha $buildid "${msg}"
+  die "${msg}"
+fi
+
+info "Tagging Branch Image"
+docker tag $full_image $branch_image
+
+info "Push Full Image to ECR"
+docker push $full_image
+
+if [ "$?" != "0" ]; then
+  msg="Docker Push to AWS ECR Failure ($?): $full_image"
+  slack_fail $branch_name $short_sha $buildid "${msg}"
+  die "${msg}"
+fi
+
+info "Push Branch Image to ECR"
+docker push $branch_image
+
+if [ "$?" != "0" ]; then
+  msg="Docker Push to AWS ECR Failure ($?): $branch_image"
+  slack_fail $branch_name $short_sha $buildid "${msg}"
+  die "${msg}"
+fi
+
+slack_success $branch_name $short_sha $buildid "${branch_image}\n${full_image}"
+info "Build & push complete for ${full_image} & ${branch_image}"
