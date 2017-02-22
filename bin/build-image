@@ -38,6 +38,10 @@ while [[ $# -gt 1 ]]; do
       TAG="$2"
       shift # past argument
       ;;
+    -d|--dockerfile)
+      DOCKERFILE="$2"
+      shift # past argument
+      ;;
     *)
       echo "Unknown Option."
       exit 1
@@ -76,6 +80,7 @@ info "ECR Region: $region"
 
 eval input_tag=\$TAG
 eval webhook=\$WEBHOOK
+eval dockerfile=\$DOCKERFILE
 
 if [[ -z "$input_tag" ]] ; then
   branch_name="$(git symbolic-ref --short -q HEAD)"
@@ -157,10 +162,18 @@ info "Build ID: $buildid"
 slack_start $branch_name $short_sha $buildid
 
 # check for Dockerfile
-if [ ! -f ./Dockerfile ]; then
-  msg="Dockerfile not found!"
-  slack_fail $branch_name $short_sha $buildid "${msg}"
-  die "${msg}"
+if [ "$dockerfile" ]; then
+  if [ ! -f "./$dockerfile" ]; then
+    msg="Dockerfile not found! (./$dockerfile)"
+    slack_fail $branch_name $short_sha $buildid "${msg}"
+    die "${msg}"
+  fi
+else
+  if [ ! -f ./Dockerfile ]; then
+    msg="Dockerfile not found!"
+    slack_fail $branch_name $short_sha $buildid "${msg}"
+    die "${msg}"
+  fi
 fi
 
 # Log in to ECR
@@ -177,7 +190,11 @@ info "Pulling Branch Image"
 docker pull $branch_image || true
 
 info "Build Docker Image"
-docker build -t $full_image .
+if [ "$dockerfile" ]; then
+  docker build -t $full_image -f $dockerfile .
+else
+  docker build -t $full_image .
+fi
 
 if [ "$?" != "0" ]; then
   msg="Docker Build Failure ($?)"
