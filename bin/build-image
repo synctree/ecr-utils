@@ -101,7 +101,7 @@ fi
 if [ "$branch_name" = "" ]; then
   tag="$(git describe --tags)"
   branch_name="$tag"
-  short_sha="$tag"
+  short_sha="tag"
   clean_branch="$tag"
   branch_image="${ecr_url}/${base}:${tag}"
   full_image="${ecr_url}/${base}:${tag}"
