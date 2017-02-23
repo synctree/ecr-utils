@@ -52,14 +52,14 @@ done
 
 eval ecr_url=\$ECR_URL
 if [ "$ecr_url" ]; then
-  info "ECR URL: $ecr_url"
+  info "ECR URL:        $ecr_url"
 else
   die "-e|--ecr-url Required"
 fi
 
 eval base=\$REPO_NAME
 if [ "$base" ]; then
-  info "ECR Repo: $base"
+  info "ECR Repo:       $base"
 else
   die "-n|--repo-name Required"
 fi
@@ -69,14 +69,14 @@ eval channel_set=\$CHANNEL
 if [ "$channel_set" ]; then
   channel="$channel_set"
 fi
-info "Slack Channel: $channel"
+info "Slack Channel:  $channel"
 
 region='us-west-2'
 eval region_set=\$AWS_REGION
 if [ "$region_set" ]; then
   region="$region_set"
 fi
-info "ECR Region: $region"
+info "ECR Region:     $region"
 
 eval input_tag=\$TAG
 eval webhook=\$WEBHOOK
@@ -96,7 +96,15 @@ else
   clean_branch="- tag build -"
   branch_image="${ecr_url}/${base}:${tag}"
   full_image="${ecr_url}/${base}:${tag}"
-  shift
+fi
+
+if [ "$branch_name" = "" ]; then
+  tag="$(git describe --tags)"
+  branch_name="- tag build -"
+  short_sha="- tag build -"
+  clean_branch="- tag build -"
+  branch_image="${ecr_url}/${base}:${tag}"
+  full_image="${ecr_url}/${base}:${tag}"
 fi
 
 info "Git Branch:     ${branch_name}"
