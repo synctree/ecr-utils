@@ -68,7 +68,7 @@ eval region_set=\$REGION
 if [ "$region_set" ]; then
   aws_region="$region_set"
 fi
-info "ECR Region: $region"
+info "ECR Region: $aws_region"
 
 clean_branch="$(echo $branch_name | sed -e 's/\//-/g')"
 short_sha="$(git rev-parse --short HEAD)"
