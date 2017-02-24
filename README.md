@@ -10,53 +10,51 @@ Requirements
 Cloudformation Stacks
 ---
 
-There are 2 AWS Cloudformation Stacks included. One that will build out the `AWS CodeBuild` project alone and one that will build out `SNS + Lambda + AWS CodeBuild`.
+There are 4 AWS Cloudformation Stack templates included.
 
-To build the `AWS CodeBuild` Only Stack:
+- `templates/codebuild.json`
+- `templates/codebuild-ecr.json`
+- `templates/sns-lambda-codebuild.json`
+- `templates/sns-lambda-codebuild-ecr.json`
 
-```
-$ AWS_PROFILE=client ./aws-build-stack.sh \
-  -n <github-repo-name> \
-  -g <full-path-to-github-repo>.git \
-  -w <slace-webhook-url> \
-  -t templates/codebuild-only.json
-```
+The name of the template file is pretty straight forward. The name implies the services it will integrate based on the Project Name (`-n`) passed in.
 
-To build the `SNS + Lambda + AWS CodeBuild` Stack:
+To build a stack, pass the Template file to the script:
 
 ```
 $ AWS_PROFILE=client ./aws-build-stack.sh \
   -n <github-repo-name> \
   -g <full-path-to-github-repo>.git \
   -w <slace-webhook-url> \
-  -t templates/lambda-codebuild.json
+  -t templates/sns-lambda-codebuild-ecr.json
 ```
 
 Example output:
 
 ```
 $ AWS_PROFILE=client ./aws-build-stack.sh \
- -n ecr-utils \
- -g https://github.com/synctree/ecr-utils.git \
- -w https://hooks.slack.com/services/superneattokenyo \
- -t templates/lambda-codebuild.json
- [2017-02-23 19:30:21] Project Name:       ecr-utils
- [2017-02-23 19:30:21] Github Repo:        https://github.com/synctree/ecr-utils.git
- [2017-02-23 19:30:21] Slack Webhook:      https://hooks.slack.com/services/superneattokenyo
- [2017-02-23 19:30:21] AWS Region:         us-west-2
- [2017-02-23 19:30:21] CF Template:        templates/lambda-codebuild.json
- [2017-02-23 19:30:21] Stack Name:         ecr-utils-pipeline
- [2017-02-23 19:30:21] Full Template Path: file:////usr//src//ecr-utils//templates//lambda-codebuild.json
- [2017-02-23 19:30:21] Starting Stack Build
- [2017-02-23 19:30:28] Stack ID: arn:aws:cloudformation:us-west-2:000000000000:stack/ecr-utils-pipeline/d2936cb0-fa30-11e6-8760-500c593b9a36
- .................
- [2017-02-23 19:32:11] Stack Status: CREATE_COMPLETE
- [2017-02-23 19:32:12] Info for Github Service Integration:
- [2017-02-23 19:32:12]  == AWS Region: us-west-2
- [2017-02-23 19:32:13]  == SNS Topic ARN: "arn:aws:sns:us-west-2:000000000000:lambda-ecr-utils-git"
- [2017-02-23 19:32:14]  == AWS Access Key ID: "AKIAJYP3FBXTYWADLX7A"
- [2017-02-23 19:32:15]  == AWS Secret Key: "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"
- [2017-02-23 19:32:15] Stack created! (ecr-utils-pipeline)
+  -n ecr-utils \
+  -g https://github.com/synctree/ecr-utils.git \
+  -w https://hooks.slack.com/services/superneattokenyo \
+  -t templates/sns-lambda-codebuild-ecr.json
+[2017-02-23 20:17:47] Project Name:       ecr-utils
+[2017-02-23 20:17:47] Github Repo:        https://github.com/synctree/ecr-utils.git
+[2017-02-23 20:17:47] Slack Webhook:      hhttps://hooks.slack.com/services/superneattokenyo
+[2017-02-23 20:17:47] AWS Region:         us-west-2
+[2017-02-23 20:17:47] CF Template:        templates/sns-lambda-codebuild-ecr.json
+[2017-02-23 20:17:47] Stack Name:         ecr-utils-sns-lambda-codebuild-ecr
+[2017-02-23 20:17:47] Full Template Path: file:////usr//src//ecr-utils//templates//sns-lambda-codebuild-ecr.json
+[2017-02-23 20:17:47] Starting Stack Build
+[2017-02-23 20:17:50] Stack ID: arn:aws:cloudformation:us-west-2:00000000000:stack/ecr-utils-sns-lambda-codebuild-ecr/70578cf0-fa37-11e6-9f4b-503f2a2ceee6
+...............
+[2017-02-23 20:19:20] Stack Status: CREATE_COMPLETE
+[2017-02-23 20:19:22] Info for Github Service Integration:
+[2017-02-23 20:19:22]  == AWS Region: us-west-2
+[2017-02-23 20:19:23]  == SNS Topic ARN: "arn:aws:sns:us-west-2:00000000000:lambda-ecr-utils-git"
+[2017-02-23 20:19:23]  == AWS Access Key ID: "AKIAJVJLSVDCNSLT4K3A"
+[2017-02-23 20:19:24]  == AWS Secret Key: "superSecretAccessKeyWithLimitedPrivs"
+[2017-02-23 20:19:25]  == AWS ECR Repo URL: "00000000000.dkr.ecr.us-west-2.amazonaws.com/ecr-utils"
+[2017-02-23 20:19:25] Stack created! (ecr-utils-sns-lambda-codebuild-ecr)
 ```
 
 Install Utilities

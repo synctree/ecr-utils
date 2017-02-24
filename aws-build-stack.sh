@@ -74,14 +74,15 @@ if [ "$region_set" ]; then
 fi
 info "AWS Region:         $aws_region"
 
-template='templates/lambda-codebuild.json'
+template='templates/sns-lambda-codebuild.json'
 eval temp_set=\$TEMPLATE
 if [ "$temp_set" ]; then
   template="$temp_set"
 fi
 info "CF Template:        $template"
 
-stack_name="${project_name}-pipeline"
+base=$(echo $template | xargs basename -s .json)
+stack_name="${project_name}-${base}"
 info "Stack Name:         $stack_name"
 
 template_path="file://$(echo $(pwd)/${template} | sed -e 's/\//\/\//g')"
@@ -137,6 +138,10 @@ get_secret_key() {
   aws --region $aws_region cloudformation describe-stacks --stack-name $stack_name | jq -c '.Stacks[0].Outputs[] | select(.OutputKey | contains("SecretKey"))' | jq -c '.OutputValue'
 }
 
+get_ecr_repo() {
+  aws --region $aws_region cloudformation describe-stacks --stack-name $stack_name | jq -c '.Stacks[0].Outputs[] | select(.OutputKey | contains("ECRRepo"))' | jq -c '.OutputValue'
+}
+
 while [[ true ]] ; do
   info "Starting Stack Build"
   stack_id="$(start_build)"
@@ -161,6 +166,7 @@ while [[ true ]] ; do
     info " == SNS Topic ARN: $(sns_topic_arn)"
     info " == AWS Access Key ID: $(get_access_key)"
     info " == AWS Secret Key: $(get_secret_key)"
+    info " == AWS ECR Repo URL: $(get_ecr_repo)"
     info "Stack created! ($stack_name)"
     exit 0
   fi
