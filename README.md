@@ -1,6 +1,12 @@
 # ecr-utils
 AWS ECR build pipeline utilities
 
+Requirements
+---
+
+- [aws cli](http://docs.aws.amazon.com/cli/latest/userguide/installing.html)
+- [jq](https://github.com/stedolan/jq)
+
 Cloudformation Stacks
 ---
 
@@ -34,19 +40,23 @@ $ AWS_PROFILE=client ./aws-build-stack.sh \
  -g https://github.com/synctree/ecr-utils.git \
  -w https://hooks.slack.com/services/superneattokenyo \
  -t templates/lambda-codebuild.json
-[2017-02-23 16:54:38] Project Name:       ecr-utils
-[2017-02-23 16:54:38] Github Repo:        https://github.com/synctree/ecr-utils.git
-[2017-02-23 16:54:38] Slack Webhook:      https://hooks.slack.com/services/superneattokenyo
-[2017-02-23 16:54:38] AWS Region:         us-west-2
-[2017-02-23 16:54:38] CF Template:        templates/lambda-codebuild.json
-[2017-02-23 16:54:38] Stack Name:         ecr-utils-pipeline
-[2017-02-23 16:54:38] Full Template Path: file:////opt//usr//ecr-utils//templates//lambda-codebuild.json
-[2017-02-23 16:54:38] Starting Stack Build
-[2017-02-23 16:54:40] Stack ID:           arn:aws:cloudformation:us-west-2:0000000000:stack/ecr-utils-pipeline/0ea23030-fa1b-11e6-8367-50d5ca789ee6
-..........
-[2017-02-23 16:55:42] Stack Status: CREATE_COMPLETE
-[2017-02-23 16:55:43] Stack created! (ecr-utils-pipeline)
-[2017-02-23 16:55:44] SNS Topic to link with Github repo: "arn:aws:sns:us-west-2:0000000000:lambda-ecr-utils-git"
+ [2017-02-23 19:30:21] Project Name:       ecr-utils
+ [2017-02-23 19:30:21] Github Repo:        https://github.com/synctree/ecr-utils.git
+ [2017-02-23 19:30:21] Slack Webhook:      https://hooks.slack.com/services/superneattokenyo
+ [2017-02-23 19:30:21] AWS Region:         us-west-2
+ [2017-02-23 19:30:21] CF Template:        templates/lambda-codebuild.json
+ [2017-02-23 19:30:21] Stack Name:         ecr-utils-pipeline
+ [2017-02-23 19:30:21] Full Template Path: file:////usr//src//ecr-utils//templates//lambda-codebuild.json
+ [2017-02-23 19:30:21] Starting Stack Build
+ [2017-02-23 19:30:28] Stack ID: arn:aws:cloudformation:us-west-2:000000000000:stack/ecr-utils-pipeline/d2936cb0-fa30-11e6-8760-500c593b9a36
+ .................
+ [2017-02-23 19:32:11] Stack Status: CREATE_COMPLETE
+ [2017-02-23 19:32:12] Info for Github Service Integration:
+ [2017-02-23 19:32:12]  == AWS Region: us-west-2
+ [2017-02-23 19:32:13]  == SNS Topic ARN: "arn:aws:sns:us-west-2:000000000000:lambda-ecr-utils-git"
+ [2017-02-23 19:32:14]  == AWS Access Key ID: "AKIAJYP3FBXTYWADLX7A"
+ [2017-02-23 19:32:15]  == AWS Secret Key: "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"
+ [2017-02-23 19:32:15] Stack created! (ecr-utils-pipeline)
 ```
 
 Install Utilities
