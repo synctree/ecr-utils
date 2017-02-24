@@ -64,13 +64,23 @@ Install Utilities
 curl https://raw.githubusercontent.com/synctree/eb-utils/master/install.sh | bash -
 ```
 
-CircleCI circle.yml
+CI Configs
 ---
+
+- `buildspec.yml`
+  - This is the AWS CodeBuild configuration file. Required to use AWS CodeBuild.
+  - Simply calls the `bin/build-image` script.
+- `circle.yml`
+  - Configuration for CircleCI.
+  - Calls the `bin/cb` with the branch to build.
+
+### CircleCI circle.yml
 
 ```yaml
 ---
 dependencies:
   pre:
+    - sudo pip install --upgrade awscli
     - curl https://raw.githubusercontent.com/synctree/ecr-utils/master/install.sh | bash -
 
 test:
@@ -78,8 +88,7 @@ test:
     - /usr/local/bin/cb -p $CODEBUILD_PROJECT -e $ECR_REPO -b $CIRCLE_BRANCH
 ```
 
-AWS CodeBuild buildspec.yml
----
+### AWS CodeBuild buildspec.yml
 
 ```yaml
 version: 0.1
@@ -95,3 +104,13 @@ phases:
     commands:
       - echo "[`date`] Build Complete."
 ```
+
+bin files
+---
+
+- `bin/build-image`
+  - This will perform the login, build and push for Docker image to ECR.
+  - By default, it will tag the image with the branch name and also with the branch name + SHA1. This will allow for more specific build tagging and release.
+- `bin/cb`
+  - This will start the AWS CodeBuild and report status back.
+  - It will successfully close when a build is complete with a good status. It will close with error and fail the build. This can be used within the
