@@ -129,6 +129,14 @@ sns_topic_arn() {
   get_resources | jq -c '.StackResources[] | select(.LogicalResourceId | contains("LambdaGitSNS"))' | jq -c '.PhysicalResourceId'
 }
 
+get_access_key() {
+  aws --region $aws_region cloudformation describe-stacks --stack-name $stack_name | jq -c '.Stacks[0].Outputs[] | select(.OutputKey | contains("AccessKey"))' | jq -c '.OutputValue'
+}
+
+get_secret_key() {
+  aws --region $aws_region cloudformation describe-stacks --stack-name $stack_name | jq -c '.Stacks[0].Outputs[] | select(.OutputKey | contains("SecretKey"))' | jq -c '.OutputValue'
+}
+
 while [[ true ]] ; do
   info "Starting Stack Build"
   stack_id="$(start_build)"
@@ -148,8 +156,12 @@ while [[ true ]] ; do
   fi
 
   if is_complete ; then
+    info "Info for Github Service Integration:"
+    info " == AWS Region: $aws_region"
+    info " == SNS Topic ARN: $(sns_topic_arn)"
+    info " == AWS Access Key ID: $(get_access_key)"
+    info " == AWS Secret Key: $(get_secret_key)"
     info "Stack created! ($stack_name)"
-    info "SNS Topic to link with Github repo: $(sns_topic_arn)"
     exit 0
   fi
 
