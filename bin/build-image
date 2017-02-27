@@ -91,9 +91,9 @@ if [[ -z "$input_tag" ]] ; then
   full_image="${ecr_url}/${base}:${tag}"
 else
   tag="${input_tag}"
-  branch_name="- tag build -"
-  short_sha="- tag build -"
-  clean_branch="- tag build -"
+  branch_name="$tag"
+  short_sha="tag"
+  clean_branch="$tag"
   branch_image="${ecr_url}/${base}:${tag}"
   full_image="${ecr_url}/${base}:${tag}"
 fi
