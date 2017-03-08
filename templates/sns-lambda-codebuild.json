@@ -203,7 +203,7 @@
             "    if commit == '0000000000000000000000000000000000000000':",
             "        print('Nothing to Build')",
             "        return True",
-            "    response = client.start_build(projectName=repo, sourceVersion=branch)",
+            { "Fn::Join": [ "", [ "    response = client.start_build(projectName='", { "Ref": "ProjectName" }, "', sourceVersion=branch)"]]},
             "    print('Build Triggered')",
             "    return True"
           ]]}
