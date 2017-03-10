@@ -82,6 +82,8 @@ eval input_tag=\$TAG
 eval webhook=\$WEBHOOK
 eval dockerfile=\$DOCKERFILE
 
+master_image="${ecr_url}/${base}:master"
+
 if [[ -z "$input_tag" ]] ; then
   branch_name="$(git symbolic-ref --short -q HEAD)"
   clean_branch="$(echo $branch_name | sed -e 's/\//-/g')"
@@ -194,8 +196,13 @@ if [ "$?" != "0" ]; then
   die "${msg}"
 fi
 
-info "Pulling Branch Image"
-docker pull $branch_image || true
+if [ "$short_sha" == "tag" ]; then
+  info "Pulling Master Image"
+  docker pull $master_image || true
+else
+  info "Pulling Branch Image"
+  docker pull $branch_image || true
+fi
 
 info "Build Docker Image"
 if [ "$dockerfile" ]; then
