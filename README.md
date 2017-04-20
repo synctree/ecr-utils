@@ -14,6 +14,7 @@ There are 4 AWS Cloudformation Stack templates included.
 
 - `templates/codebuild.json`
 - `templates/codebuild-ecr.json`
+- `templates/sns-lambda.json`
 - `templates/sns-lambda-codebuild.json`
 - `templates/sns-lambda-codebuild-ecr.json`
 
