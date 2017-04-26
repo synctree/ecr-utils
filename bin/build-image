@@ -124,9 +124,10 @@ slack_success() {
   fi
   branch=$1
   commit=$2
-  build=$3
-  images=$4
-  json="{\"username\": \"AWS CodeBuild\", \"icon_emoji\": \":vaultboy:\", \"channel\": \"$channel\", \"attachments\": [ { \"color\": \"#36a64f\", \"text\": \"Build Complete for $branch ($commit)\",\"fields\": [{\"title\": \"Branch\",\"value\": \"$branch\",\"short\": true},{\"title\": \"Commit\",\"value\": \"$commit\",\"short\": true},{\"title\": \"Status\",\"value\": \"Complete\",\"short\": true},{\"title\": \"CodeBuild ID\",\"value\": \"$build\",\"short\": false},{\"title\": \"Images\",\"value\": \"$images\",\"short\": false}]}]}}"
+  project=$3
+  build=$4
+  images=$5
+  json="{\"username\": \"AWS CodeBuild\", \"icon_emoji\": \":vaultboy:\", \"channel\": \"$channel\", \"attachments\": [ { \"color\": \"#36a64f\", \"text\": \"[$project] Build Complete for $branch ($commit)\",\"fields\": [{\"title\": \"Branch\",\"value\": \"$branch\",\"short\": true},{\"title\": \"Commit\",\"value\": \"$commit\",\"short\": true},{\"title\": \"Status\",\"value\": \"Complete\",\"short\": true},{\"title\": \"CodeBuild ID\",\"value\": \"$build\",\"short\": false},{\"title\": \"Images\",\"value\": \"$images\",\"short\": false}]}]}}"
 
   curl -s -o /dev/null -d "payload=$json" "$webhook"
 }
@@ -140,8 +141,9 @@ slack_start() {
   fi
   branch=$1
   commit=$2
-  build=$3
-  json="{\"username\": \"AWS CodeBuild\", \"icon_emoji\": \":vaultboy:\", \"channel\": \"$channel\", \"attachments\": [ { \"text\": \"Build starting for $branch ($commit)\",\"fields\": [{\"title\": \"Branch\",\"value\": \"$branch\",\"short\": true},{\"title\": \"Commit\",\"value\": \"$commit\",\"short\": true},{\"title\": \"Status\",\"value\": \"Starting\",\"short\": true},{\"title\": \"CodeBuild ID\",\"value\": \"$build\",\"short\": false}]}]}}"
+  project=$3
+  build=$4
+  json="{\"username\": \"AWS CodeBuild\", \"icon_emoji\": \":vaultboy:\", \"channel\": \"$channel\", \"attachments\": [ { \"text\": \"[$project] Build starting for $branch ($commit)\",\"fields\": [{\"title\": \"Branch\",\"value\": \"$branch\",\"short\": true},{\"title\": \"Commit\",\"value\": \"$commit\",\"short\": true},{\"title\": \"Status\",\"value\": \"Starting\",\"short\": true},{\"title\": \"CodeBuild ID\",\"value\": \"$build\",\"short\": false}]}]}}"
 
   curl -s -o /dev/null -d "payload=$json" "$webhook"
 }
@@ -155,33 +157,38 @@ slack_fail() {
   fi
   branch=$1
   commit=$2
-  build=$3
-  msg=$4
-  json="{\"username\": \"AWS CodeBuild\", \"icon_emoji\": \":vaultboy:\", \"channel\": \"$channel\", \"attachments\": [ { \"color\": \"#FF0000\", \"text\": \"Build failure for $branch ($commit)\",\"fields\": [{\"title\": \"Branch\",\"value\": \"$branch\",\"short\": true},{\"title\": \"Commit\",\"value\": \"$commit\",\"short\": true},{\"title\": \"Status\",\"value\": \"Failure\",\"short\": true},{\"title\": \"CodeBuild ID\",\"value\": \"$build\",\"short\": false},{\"title\": \"Script Error\",\"value\": \"$msg\",\"short\": false}]}]}}"
+  project=$3
+  build=$4
+  msg=$5
+  json="{\"username\": \"AWS CodeBuild\", \"icon_emoji\": \":vaultboy:\", \"channel\": \"$channel\", \"attachments\": [ { \"color\": \"#FF0000\", \"text\": \"[$project] Build failure for $branch ($commit)\",\"fields\": [{\"title\": \"Branch\",\"value\": \"$branch\",\"short\": true},{\"title\": \"Commit\",\"value\": \"$commit\",\"short\": true},{\"title\": \"Status\",\"value\": \"Failure\",\"short\": true},{\"title\": \"CodeBuild ID\",\"value\": \"$build\",\"short\": false},{\"title\": \"Script Error\",\"value\": \"$msg\",\"short\": false}]}]}}"
 
   curl -s -o /dev/null -d "payload=$json" "$webhook"
 }
 
 buildid="adhoc-$(whoami)-$(hostname)"
+project_name="$(git remote -v | grep origin | grep fetch | awk '{print $2}')"
 eval is_codebuild=\$CODEBUILD_BUILD_ID
 if [ "$is_codebuild" ]; then
+  IFS=':' read -a build_id_a <<< "${CODEBUILD_BUILD_ID}"
+  project_name="${build_id_a[0]}"
   buildid="$is_codebuild"
 fi
-info "Build ID: $buildid"
+info "Build ID:       $buildid"
+info "Project Name:   $project_name"
 
-slack_start $branch_name $short_sha $buildid
+slack_start $branch_name $short_sha $project_name $buildid
 
 # check for Dockerfile
 if [ "$dockerfile" ]; then
   if [ ! -f "./$dockerfile" ]; then
     msg="Dockerfile not found! (./$dockerfile)"
-    slack_fail $branch_name $short_sha $buildid "${msg}"
+    slack_fail $branch_name $short_sha $project_name $buildid "${msg}"
     die "${msg}"
   fi
 else
   if [ ! -f ./Dockerfile ]; then
     msg="Dockerfile not found!"
-    slack_fail $branch_name $short_sha $buildid "${msg}"
+    slack_fail $branch_name $short_sha $project_name $buildid "${msg}"
     die "${msg}"
   fi
 fi
@@ -192,7 +199,7 @@ eval $(aws --region $region ecr get-login)
 
 if [ "$?" != "0" ]; then
   msg="AWS ECR Login Failure ($?)"
-  slack_fail $branch_name $short_sha $buildid "${msg}"
+  slack_fail $branch_name $short_sha $project_name $buildid "${msg}"
   die "${msg}"
 fi
 
@@ -213,7 +220,7 @@ fi
 
 if [ "$?" != "0" ]; then
   msg="Docker Build Failure ($?)"
-  slack_fail $branch_name $short_sha $buildid "${msg}"
+  slack_fail $branch_name $short_sha $project_name $buildid "${msg}"
   die "${msg}"
 fi
 
@@ -225,7 +232,7 @@ docker push $full_image
 
 if [ "$?" != "0" ]; then
   msg="Docker Push to AWS ECR Failure ($?): $full_image"
-  slack_fail $branch_name $short_sha $buildid "${msg}"
+  slack_fail $branch_name $short_sha $project_name $buildid "${msg}"
   die "${msg}"
 fi
 
@@ -234,9 +241,9 @@ docker push $branch_image
 
 if [ "$?" != "0" ]; then
   msg="Docker Push to AWS ECR Failure ($?): $branch_image"
-  slack_fail $branch_name $short_sha $buildid "${msg}"
+  slack_fail $branch_name $short_sha $project_name $buildid "${msg}"
   die "${msg}"
 fi
 
-slack_success $branch_name $short_sha $buildid "${branch_image}\n${full_image}"
+slack_success $branch_name $short_sha $project_name $buildid "${branch_image}\n${full_image}"
 info "Build & push complete for ${full_image} & ${branch_image}"
