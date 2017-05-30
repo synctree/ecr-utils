@@ -81,7 +81,7 @@ if [ "$temp_set" ]; then
 fi
 info "CF Template:        $template"
 
-base=$(echo $template | xargs basename -s .json)
+base=$(echo $template | xargs basename -s .json | xargs basename -s .yml)
 stack_name="${project_name}-${base}"
 info "Stack Name:         $stack_name"
 
