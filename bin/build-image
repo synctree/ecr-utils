@@ -195,7 +195,7 @@ fi
 
 # Log in to ECR
 info "Logging in to ECR"
-eval $(aws --region $region ecr get-login)
+eval $(aws --region $region ecr get-login | perl -pe 's/-e none//g')
 
 if [ "$?" != "0" ]; then
   msg="AWS ECR Login Failure ($?)"
