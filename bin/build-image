@@ -90,7 +90,8 @@ master_image="${ecr_url}/${base}:master"
 
 if [[ -z "$input_tag" ]] ; then
   info "input_tag is empty, using HEAD symbolic-ref"
-  branch_name="$(git symbolic-ref --short HEAD)"
+  # symbolic-ref will fail when using a detached head. Try falling back to the codebuild input ref
+  branch_name="$(git symbolic-ref --short HEAD || echo -n "$CODEBUILD_SOURCE_VERSION")"
   clean_branch="$(echo $branch_name | sed -e 's/\//-/g')"
   short_sha="$(git rev-parse --short HEAD)"
   tag="${clean_branch}-${short_sha}"
