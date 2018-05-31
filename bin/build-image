@@ -1,6 +1,8 @@
 #!/bin/bash
 # build-image <tag(optional)>
 
+set -x
+
 info() {
   echo "[`date +'%Y-%m-%d %T'`] $@"
 }
