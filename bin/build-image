@@ -10,6 +10,10 @@ die() {
   exit 1
 }
 
+info "$@"
+info "Environment:"
+env
+
 while [[ $# -gt 1 ]]; do
   key="$1"
 
@@ -85,6 +89,7 @@ eval dockerfile=\$DOCKERFILE
 master_image="${ecr_url}/${base}:master"
 
 if [[ -z "$input_tag" ]] ; then
+  info "input_tag is empty, using HEAD symbolic-ref"
   branch_name="$(git symbolic-ref --short -q HEAD)"
   clean_branch="$(echo $branch_name | sed -e 's/\//-/g')"
   short_sha="$(git rev-parse --short HEAD)"
@@ -92,6 +97,7 @@ if [[ -z "$input_tag" ]] ; then
   branch_image="${ecr_url}/${base}:${clean_branch}"
   full_image="${ecr_url}/${base}:${tag}"
 else
+  info "input_tag: $input_tag"
   tag="${input_tag}"
   branch_name="$tag"
   short_sha="tag"
@@ -101,6 +107,7 @@ else
 fi
 
 if [ "$branch_name" = "" ]; then
+  info "branch_name = ''"
   tag="$(git describe --tags)"
   branch_name="$tag"
   short_sha="tag"
