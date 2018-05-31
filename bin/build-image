@@ -12,7 +12,7 @@ die() {
 
 info "$@"
 info "Environment:"
-env
+env | sort
 
 while [[ $# -gt 1 ]]; do
   key="$1"
@@ -96,6 +96,8 @@ if [[ -z "$input_tag" ]] ; then
   tag="${clean_branch}-${short_sha}"
   branch_image="${ecr_url}/${base}:${clean_branch}"
   full_image="${ecr_url}/${base}:${tag}"
+  
+  info "set branch_name to '$branch_name'"
 else
   info "input_tag: $input_tag"
   tag="${input_tag}"
