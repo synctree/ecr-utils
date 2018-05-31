@@ -92,7 +92,7 @@ master_image="${ecr_url}/${base}:master"
 
 if [[ -z "$input_tag" ]] ; then
   info "input_tag is empty, using HEAD symbolic-ref"
-  branch_name="$(git symbolic-ref --short -q HEAD)"
+  branch_name="$(git symbolic-ref --short HEAD)"
   clean_branch="$(echo $branch_name | sed -e 's/\//-/g')"
   short_sha="$(git rev-parse --short HEAD)"
   tag="${clean_branch}-${short_sha}"
