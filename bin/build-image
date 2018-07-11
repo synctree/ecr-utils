@@ -16,6 +16,7 @@ env | sort
 
 while [[ $# -gt 1 ]]; do
   key="$1"
+  info $key
 
   case $key in
     -w|--webhook)
